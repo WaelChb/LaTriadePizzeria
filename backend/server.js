@@ -1,113 +1,106 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const Pizza = require("./models/pizza");
-const Order = require("./models/order");
-const app = express();
-const port = 3000;
+require("dotenv").config(); // Charger les variables d'environnement
 
-// Middleware pour activer CORS
-app.use(cors());
+const express = require("express");
+const mongoose = require("mongoose");
+const session = require("express-session");
+const cors = require("cors");
+const Pizza = require("./models/pizza");
+
+const app = express();
+
 // Middleware pour parser le JSON
 app.use(express.json());
+app.use(cors());
 
-// Connexion à la base de données MongoDB
+// Configuration de mongoose pour se connecter à la base de données MongoDB
 mongoose
   .connect("mongodb://127.0.0.1:27017/LaTriadePizzeria")
-  .then(() => console.log("Connecté à MongoDB"))
-  .catch((err) => console.error("Erreur de connexion à MongoDB", err));
+  .then(() => {
+    console.log("Connexion à MongoDB réussie");
+  })
+  .catch((error) => {
+    console.error("Erreur de connexion à MongoDB:", error);
+  });
 
-// Routes de l'API
+// Configuration du middleware express-session
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "defaultsecret", // Utilisation de la clé secrète depuis les variables d'environnement ou une valeur par défaut
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Mettre true en production avec HTTPS
+  })
+);
 
-// Créer une nouvelle pizza
-app.post("/pizzas", async (req, res) => {
-  try {
-    const newPizza = new Pizza(req.body);
-    const savedPizza = await newPizza.save();
-    res.status(201).send(savedPizza);
-  } catch (error) {
-    res.status(400).send(error);
-  }
-});
-
-// Créer une nouvelle commande
-app.post("/orders", async (req, res) => {
-  try {
-    const newOrder = new Order(req.body);
-    const savedOrder = await newOrder.save();
-    res.status(201).send(savedOrder);
-  } catch (error) {
-    res.status(400).send(error);
-  }
-});
-
-// Récupérer toutes les pizzas
+// Routes pour la gestion des pizzas
 app.get("/pizzas", async (req, res) => {
   try {
     const pizzas = await Pizza.find();
-    res.status(200).send(pizzas);
+    res.json(pizzas);
   } catch (error) {
     res.status(500).send(error);
   }
 });
 
-// Récupérer toutes les commandes
-app.get("/orders", async (req, res) => {
+app.post("/pizzas", async (req, res) => {
   try {
-    const orders = await Order.find();
-    res.status(200).send(orders);
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-// Récupérer une commande par ID
-app.get("/orders/:id", async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) {
-      return res.status(404).send("Commande non trouvée");
-    }
-    res.status(200).send(order);
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-// Mettre à jour une commande
-app.put("/orders/:id", async (req, res) => {
-  try {
-    const updatedOrder = await Order.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-    if (!updatedOrder) {
-      return res.status(404).send("Commande non trouvée");
-    }
-    res.status(200).send(updatedOrder);
+    const newPizza = new Pizza(req.body);
+    await newPizza.save();
+    res.status(201).send(newPizza);
   } catch (error) {
     res.status(400).send(error);
   }
 });
 
-// Supprimer une commande
-app.delete("/orders/:id", async (req, res) => {
+app.put("/pizzas/:id", async (req, res) => {
   try {
-    const deletedOrder = await Order.findByIdAndDelete(req.params.id);
-    if (!deletedOrder) {
-      return res.status(404).send("Commande non trouvée");
+    const updatedPizza = await Pizza.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!updatedPizza) {
+      return res.status(404).send();
     }
-    res.status(200).send("Commande supprimée");
+    res.send(updatedPizza);
   } catch (error) {
-    res.status(500).send(error);
+    res.status(400).send(error);
   }
 });
 
-// Démarrer le serveur
-app.listen(port, () => {
-  console.log(`Serveur en cours d'exécution sur http://localhost:${port}`);
+// Route pour gérer le panier de l'utilisateur
+app.get("/cart", (req, res) => {
+  if (!req.session.cart) {
+    req.session.cart = [];
+  }
+  res.json(req.session.cart);
+});
+
+app.post("/cart", (req, res) => {
+  if (!req.session.cart) {
+    req.session.cart = [];
+  }
+  const { pizza } = req.body;
+  const existingPizza = req.session.cart.find((item) => item._id === pizza._id);
+  if (existingPizza) {
+    existingPizza.quantity++;
+  } else {
+    req.session.cart.push({ ...pizza, quantity: 1 });
+  }
+  res.json(req.session.cart);
+});
+
+app.delete("/cart/:id", (req, res) => {
+  if (!req.session.cart) {
+    req.session.cart = [];
+  }
+  req.session.cart = req.session.cart.filter(
+    (item) => item._id !== req.params.id
+  );
+  res.json(req.session.cart);
+});
+
+// Démarrage du serveur
+app.listen(3000, () => {
+  console.log("Serveur en cours d'exécution sur http://localhost:3000");
 });

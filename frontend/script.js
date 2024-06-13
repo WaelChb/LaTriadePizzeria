@@ -1,5 +1,3 @@
-let cart = []; // Déclarer et initialiser cart comme un tableau vide
-
 // Fonction pour récupérer les pizzas depuis l'API
 async function fetchPizzas() {
   try {
@@ -19,7 +17,7 @@ async function displayPizzas() {
 
   pizzas.forEach((pizza) => {
     const listItem = document.createElement("li");
-    listItem.textContent = `${pizza.name} - ${pizza.description} - ${pizza.price}€`;
+    listItem.innerHTML = `<img src="${pizza.imageUrl}" alt="${pizza.name}" style="width: 50px; height: 50px;"> ${pizza.name} - ${pizza.description} - ${pizza.price}€`;
     const addButton = document.createElement("button");
     addButton.textContent = "Ajouter au panier";
     addButton.addEventListener("click", () => addToCart(pizza));
@@ -28,37 +26,86 @@ async function displayPizzas() {
   });
 }
 
-function addToCart(pizza) {
-  // Vérifie si la pizza est déjà dans le panier
-  const existingPizza = cart.find((item) => item.name === pizza.name);
-  if (existingPizza) {
-    // Si la pizza est déjà dans le panier, incrémente simplement la quantité
-    existingPizza.quantity++;
-  } else {
-    // Sinon, ajoute la pizza au panier avec une quantité de 1
-    cart.push({ ...pizza, quantity: 1 });
+// Fonction pour ajouter une pizza au panier
+async function addToCart(pizza) {
+  try {
+    const response = await fetch("http://localhost:3000/cart/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ pizza }),
+    });
+    const cart = await response.json();
+    displayCart(cart);
+  } catch (error) {
+    console.error("Erreur lors de l'ajout au panier:", error);
   }
-  // Mise à jour de l'affichage du panier
-  displayCart();
 }
 
-// Fonction pour afficher le contenu du panier
-function displayCart() {
+// Fonction pour afficher le panier
+async function displayCart(cart) {
+  if (!cart) {
+    const response = await fetch("http://localhost:3000/cart");
+    cart = await response.json();
+  }
+
   const cartList = document.getElementById("cart");
-  const totalPriceElement = document.getElementById("total-price");
-  cartList.innerHTML = ""; // Effacer le contenu précédent du panier
-  let totalPrice = 0; // Initialiser le prix total à 0
+  cartList.innerHTML = ""; // Effacer le panier précédent
+
+  let totalPrice = 0;
 
   cart.forEach((item) => {
-    const cartItem = document.createElement("li");
-    cartItem.textContent = `${item.name} - Quantité: ${item.quantity}`;
-    cartList.appendChild(cartItem);
-    totalPrice += item.price * item.quantity; // Mettre à jour le prix total
+    totalPrice += item.price * item.quantity;
+
+    const listItem = document.createElement("li");
+    listItem.innerHTML = `${item.name} - ${item.price}€ x <input type="number" value="${item.quantity}" min="1" onchange="updateCartItemQuantity('${item.name}', this.value)">`;
+
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "Supprimer";
+    removeButton.addEventListener("click", () => removeFromCart(item));
+    listItem.appendChild(removeButton);
+
+    cartList.appendChild(listItem);
   });
 
-  // Mettre à jour le prix total affiché
-  totalPriceElement.textContent = totalPrice.toFixed(2); // Afficher le prix avec deux décimales
+  document.getElementById("total-price").textContent = totalPrice.toFixed(2);
+}
+
+// Fonction pour mettre à jour la quantité d'un article dans le panier
+async function updateCartItemQuantity(name, quantity) {
+  try {
+    const response = await fetch("http://localhost:3000/cart/update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ pizza: { name }, quantity }),
+    });
+    const cart = await response.json();
+    displayCart(cart);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la quantité:", error);
+  }
+}
+
+// Fonction pour supprimer une pizza du panier
+async function removeFromCart(pizza) {
+  try {
+    const response = await fetch("http://localhost:3000/cart/remove", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ pizza }),
+    });
+    const cart = await response.json();
+    displayCart(cart);
+  } catch (error) {
+    console.error("Erreur lors de la suppression du panier:", error);
+  }
 }
 
 // Appel de la fonction pour afficher les pizzas au chargement de la page
 displayPizzas();
+displayCart();

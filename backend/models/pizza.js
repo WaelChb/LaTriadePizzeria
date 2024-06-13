@@ -13,6 +13,7 @@ const pizzaSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  imageUrl: { type: String, required: true },
 });
 
 const Pizza = mongoose.model("pizza", pizzaSchema);
