@@ -2,6 +2,9 @@
 async function fetchPizzas() {
   try {
     const response = await fetch("http://localhost:3000/pizzas");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const pizzas = await response.json();
     return pizzas;
   } catch (error) {
@@ -36,6 +39,9 @@ async function addToCart(pizza) {
       },
       body: JSON.stringify({ pizza }),
     });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const cart = await response.json();
     displayCart(cart);
   } catch (error) {
@@ -47,6 +53,9 @@ async function addToCart(pizza) {
 async function displayCart(cart) {
   if (!cart) {
     const response = await fetch("http://localhost:3000/cart");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     cart = await response.json();
   }
 
@@ -59,7 +68,7 @@ async function displayCart(cart) {
     totalPrice += item.price * item.quantity;
 
     const listItem = document.createElement("li");
-    listItem.innerHTML = `${item.name} - ${item.price}€ x <input type="number" value="${item.quantity}" min="1" onchange="updateCartItemQuantity('${item.name}', this.value)">`;
+    listItem.innerHTML = `${item.name} - ${item.price}€ x <input type="number" value="${item.quantity}" min="1" onchange="updateCartItemQuantity('${item._id}', this.value)">`;
 
     const removeButton = document.createElement("button");
     removeButton.textContent = "Supprimer";
@@ -73,15 +82,20 @@ async function displayCart(cart) {
 }
 
 // Fonction pour mettre à jour la quantité d'un article dans le panier
-async function updateCartItemQuantity(name, quantity) {
+async function updateCartItemQuantity(id, quantity) {
   try {
-    const response = await fetch("http://localhost:3000/cart/update", {
+    const response = await fetch(`http://localhost:3000/cart/update`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ pizza: { name }, quantity }),
+      body: JSON.stringify({ pizza: { _id: id }, quantity }),
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const cart = await response.json();
     displayCart(cart);
   } catch (error) {
@@ -93,12 +107,15 @@ async function updateCartItemQuantity(name, quantity) {
 async function removeFromCart(pizza) {
   try {
     const response = await fetch("http://localhost:3000/cart/remove", {
-      method: "POST",
+      method: "DELETE", // Change POST to DELETE
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ pizza }),
     });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const cart = await response.json();
     displayCart(cart);
   } catch (error) {

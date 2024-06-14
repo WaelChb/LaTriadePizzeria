@@ -76,7 +76,7 @@ app.get("/cart", (req, res) => {
   res.json(req.session.cart);
 });
 
-app.post("/cart", (req, res) => {
+app.post("/cart/add", (req, res) => {
   if (!req.session.cart) {
     req.session.cart = [];
   }
@@ -90,13 +90,26 @@ app.post("/cart", (req, res) => {
   res.json(req.session.cart);
 });
 
-app.delete("/cart/:id", (req, res) => {
+app.post("/cart/update", (req, res) => {
   if (!req.session.cart) {
     req.session.cart = [];
   }
-  req.session.cart = req.session.cart.filter(
-    (item) => item._id !== req.params.id
-  );
+  const { pizza, quantity } = req.body;
+  const item = req.session.cart.find((item) => item._id === pizza._id);
+  if (item) {
+    item.quantity = quantity;
+  } else {
+    return res.status(404).json({ error: "Article non trouvé dans le panier" });
+  }
+  res.json(req.session.cart);
+});
+
+app.delete("/cart/remove", (req, res) => {
+  if (!req.session.cart) {
+    req.session.cart = [];
+  }
+  const { pizza } = req.body;
+  req.session.cart = req.session.cart.filter((item) => item._id !== pizza._id);
   res.json(req.session.cart);
 });
 
