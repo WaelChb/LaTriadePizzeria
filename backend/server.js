@@ -1,18 +1,15 @@
-require("dotenv").config(); // Charger les variables d'environnement
-
 const express = require("express");
 const mongoose = require("mongoose");
-const session = require("express-session");
 const cors = require("cors");
 const Pizza = require("./models/pizza");
 
 const app = express();
 
-// Middleware pour parser le JSON
+// Middleware pour analyser le JSON dans les requêtes
 app.use(express.json());
 app.use(cors());
 
-// Configuration de mongoose pour se connecter à la base de données MongoDB
+// Connexion à MongoDB
 mongoose
   .connect("mongodb://127.0.0.1:27017/LaTriadePizzeria")
   .then(() => {
@@ -22,82 +19,51 @@ mongoose
     console.error("Erreur de connexion à MongoDB:", error);
   });
 
-// Configuration du middleware express-session
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "defaultsecret", // Utilisation de la clé secrète depuis les variables d'environnement ou une valeur par défaut
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }, // Mettre true en production avec HTTPS
-  })
-);
-
-// Routes pour la gestion des pizzas
+// Route pour récupérer toutes les pizzas
 app.get("/pizzas", async (req, res) => {
   try {
     const pizzas = await Pizza.find();
     res.json(pizzas);
   } catch (error) {
-    res.status(500).send(error);
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des pizzas" });
   }
 });
 
+// Route pour ajouter une nouvelle pizza
 app.post("/pizzas", async (req, res) => {
+  const { name, description, price, imageUrl } = req.body;
+  const newPizza = new Pizza({ name, description, price, imageUrl });
+
   try {
-    const newPizza = new Pizza(req.body);
-    await newPizza.save();
-    res.status(201).send(newPizza);
+    const savedPizza = await newPizza.save();
+    res.status(201).json(savedPizza);
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).json({ error: "Erreur lors de l'ajout de la pizza" });
   }
 });
 
+// Route pour mettre à jour une pizza
 app.put("/pizzas/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, imageUrl } = req.body;
+
   try {
     const updatedPizza = await Pizza.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+      id,
+      { name, description, price, imageUrl },
       { new: true, runValidators: true }
     );
     if (!updatedPizza) {
-      return res.status(404).send();
+      return res.status(404).json({ error: "Pizza non trouvée" });
     }
-    res.send(updatedPizza);
+    res.json(updatedPizza);
   } catch (error) {
-    res.status(400).send(error);
+    res
+      .status(400)
+      .json({ error: "Erreur lors de la mise à jour de la pizza" });
   }
-});
-
-// Route pour gérer le panier de l'utilisateur
-app.get("/cart", (req, res) => {
-  if (!req.session.cart) {
-    req.session.cart = [];
-  }
-  res.json(req.session.cart);
-});
-
-app.post("/cart", (req, res) => {
-  if (!req.session.cart) {
-    req.session.cart = [];
-  }
-  const { pizza } = req.body;
-  const existingPizza = req.session.cart.find((item) => item._id === pizza._id);
-  if (existingPizza) {
-    existingPizza.quantity++;
-  } else {
-    req.session.cart.push({ ...pizza, quantity: 1 });
-  }
-  res.json(req.session.cart);
-});
-
-app.delete("/cart/:id", (req, res) => {
-  if (!req.session.cart) {
-    req.session.cart = [];
-  }
-  req.session.cart = req.session.cart.filter(
-    (item) => item._id !== req.params.id
-  );
-  res.json(req.session.cart);
 });
 
 // Démarrage du serveur
