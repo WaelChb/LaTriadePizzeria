@@ -26,3 +26,9 @@ li {
   padding: 10px;
   border-radius: 4px;
 }
+.pizza-image,
+.cart-pizza-image {
+  width: 100px;
+  height: auto;
+  margin-right: 10px;
+}

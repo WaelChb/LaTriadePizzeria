@@ -65,6 +65,21 @@ app.put("/pizzas/:id", async (req, res) => {
       .json({ error: "Erreur lors de la mise à jour de la pizza" });
   }
 });
+// Supprimer une route
+app.delete("/pizzas/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deletePizza = await Pizza.findByIdAndDelete(id);
+    if (!deletePizza) {
+      return res.status(404).json({ error: "Pizza non trouvée" });
+    }
+    res.json(deletePizza);
+  } catch (error) {
+    res
+      .status(400)
+      .json({ error: "Erreur lors de la mise à jour de la pizza" });
+  }
+});
 
 // Démarrage du serveur
 app.listen(3000, () => {
