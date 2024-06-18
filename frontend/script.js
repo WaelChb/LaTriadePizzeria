@@ -104,5 +104,45 @@ function removeFromCart(name) {
   displayCart();
 }
 
+// Fonction pour créer une session de paiement
+async function createCheckoutSession() {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  if (cart.length === 0) {
+    alert("Votre panier est vide.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://localhost:3000/create-checkout-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ cart }),
+      }
+    );
+
+    const session = await response.json();
+    const stripe = Stripe(
+      "pk_test_51PQ8QrCTtgA7o8OEzNMBH2feWM6FxgnCYmPVfude8E8eyiGS1EbCLp74iH0ODwUW2AeMhxB4GyyO23RbxQiwpNM300om8sfV99"
+    );
+    await stripe.redirectToCheckout({ sessionId: session.id });
+  } catch (error) {
+    console.error(
+      "Erreur lors de la création de la session de paiement:",
+      error
+    );
+  }
+}
+
+// Ajouter un écouteur d'événements au bouton de passage à la caisse
+document
+  .getElementById("checkout-btn")
+  .addEventListener("click", createCheckoutSession);
+
 // Appel de la fonction pour afficher les pizzas au chargement de la page
 displayPizzas();
+// Appel de la fonction pour afficher le panier au chargement de la page
+displayCart();

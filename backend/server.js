@@ -1,87 +1,51 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const Pizza = require("./models/pizza");
-
+const bodyParser = require("body-parser");
+const pizzaRoutes = require("./routes/pizzas");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
+const PORT = 3000;
 
-// Middleware pour analyser le JSON dans les requêtes
-app.use(express.json());
+// Middleware
 app.use(cors());
+app.use(bodyParser.json());
+app.use("/pizzas", pizzaRoutes);
 
-// Connexion à MongoDB
+// Connexion à la base de données MongoDB
 mongoose
   .connect("mongodb://127.0.0.1:27017/LaTriadePizzeria")
-  .then(() => {
-    console.log("Connexion à MongoDB réussie");
-  })
-  .catch((error) => {
-    console.error("Erreur de connexion à MongoDB:", error);
+  .then(() => console.log("Connecté à MongoDB"))
+  .catch((err) => console.error("Erreur de connexion à MongoDB:", err));
+// Route pour créer une session de paiement
+app.post("/create-checkout-session", async (req, res) => {
+  const { cart } = req.body;
+
+  const lineItems = cart.map((item) => ({
+    price_data: {
+      currency: "eur",
+      product_data: {
+        name: item.name,
+        images: [item.imageUrl],
+      },
+      unit_amount: item.price * 100,
+    },
+    quantity: item.quantity,
+  }));
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: lineItems,
+    mode: "payment",
+    success_url: "http://localhost:5500/success.html",
+    cancel_url: "http://127.0.0.1:5500/frontend/index.html",
   });
 
-// Route pour récupérer toutes les pizzas
-app.get("/pizzas", async (req, res) => {
-  try {
-    const pizzas = await Pizza.find();
-    res.json(pizzas);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Erreur lors de la récupération des pizzas" });
-  }
-});
-
-// Route pour ajouter une nouvelle pizza
-app.post("/pizzas", async (req, res) => {
-  const { name, description, price, imageUrl } = req.body;
-  const newPizza = new Pizza({ name, description, price, imageUrl });
-
-  try {
-    const savedPizza = await newPizza.save();
-    res.status(201).json(savedPizza);
-  } catch (error) {
-    res.status(400).json({ error: "Erreur lors de l'ajout de la pizza" });
-  }
-});
-
-// Route pour mettre à jour une pizza
-app.put("/pizzas/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name, description, price, imageUrl } = req.body;
-
-  try {
-    const updatedPizza = await Pizza.findByIdAndUpdate(
-      id,
-      { name, description, price, imageUrl },
-      { new: true, runValidators: true }
-    );
-    if (!updatedPizza) {
-      return res.status(404).json({ error: "Pizza non trouvée" });
-    }
-    res.json(updatedPizza);
-  } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Erreur lors de la mise à jour de la pizza" });
-  }
-});
-// Supprimer une route
-app.delete("/pizzas/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const deletePizza = await Pizza.findByIdAndDelete(id);
-    if (!deletePizza) {
-      return res.status(404).json({ error: "Pizza non trouvée" });
-    }
-    res.json(deletePizza);
-  } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Erreur lors de la mise à jour de la pizza" });
-  }
+  res.json({ id: session.id });
 });
 
 // Démarrage du serveur
-app.listen(3000, () => {
-  console.log("Serveur en cours d'exécution sur http://localhost:3000");
+app.listen(PORT, () => {
+  console.log(`Serveur en cours d'exécution sur http://localhost:${PORT}`);
 });
