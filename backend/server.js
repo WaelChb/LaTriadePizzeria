@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const orderRoutes = require("./routes/orderRoutes");
 const pizzaRoutes = require("./routes/pizzas");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
@@ -12,6 +13,7 @@ const PORT = 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use("/pizzas", pizzaRoutes);
+app.use("/orders", orderRoutes);
 
 // Connexion à la base de données MongoDB
 mongoose
@@ -38,7 +40,7 @@ app.post("/create-checkout-session", async (req, res) => {
     payment_method_types: ["card"],
     line_items: lineItems,
     mode: "payment",
-    success_url: "http://localhost:5500/success.html",
+    success_url: "http://127.0.0.1:5500/frontend/summary.html",
     cancel_url: "http://127.0.0.1:5500/frontend/index.html",
   });
 
