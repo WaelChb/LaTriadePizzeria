@@ -1,10 +1,7 @@
 // Fonction pour récupérer les pizzas depuis l'API
 async function fetchPizzas() {
   try {
-    const response = await fetch("http://localhost:3000/pizzas");
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const response = await fetch("http://localhost:3000/pizzas"); // Modifier l'URL selon votre configuration
     const pizzas = await response.json();
     return pizzas;
   } catch (error) {
@@ -40,35 +37,30 @@ async function displayPizzas() {
 }
 
 // Fonction pour ajouter une pizza au panier
-async function addToCart(pizza) {
-  try {
-    const response = await fetch("http://localhost:3000/cart/add", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ pizza }),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const cart = await response.json();
-    displayCart(cart);
-  } catch (error) {
-    console.error("Erreur lors de l'ajout au panier:", error);
+function addToCart(pizza) {
+  const sizeSelect = document.getElementById(`size-${pizza._id}`);
+  const selectedSize = sizeSelect.options[sizeSelect.selectedIndex];
+  const size = selectedSize.value;
+  const price = parseFloat(selectedSize.getAttribute("data-price"));
+
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+  const existingPizza = cart.find(
+    (item) => item.name === pizza.name && item.size === size
+  );
+
+  if (existingPizza) {
+    existingPizza.quantity++;
+  } else {
+    cart.push({ ...pizza, size, price, quantity: 1, instructions: "" });
   }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  displayCart();
 }
 
 // Fonction pour afficher le panier
-async function displayCart(cart) {
-  if (!cart) {
-    const response = await fetch("http://localhost:3000/cart");
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    cart = await response.json();
-  }
-
+function displayCart() {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
   const cartList = document.getElementById("cart");
   const totalPriceElement = document.getElementById("total-price");
   let totalPrice = 0;
@@ -76,7 +68,19 @@ async function displayCart(cart) {
   cartList.innerHTML = "";
   cart.forEach((pizza) => {
     const listItem = document.createElement("li");
-    listItem.innerHTML = `${item.name} - ${item.price}€ x <input type="number" value="${item.quantity}" min="1" onchange="updateCartItemQuantity('${item._id}', this.value)">`;
+    listItem.setAttribute("data-name", pizza.name);
+    listItem.innerHTML = `
+      <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
+      <span class="pizza-info">${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
+      <div class="cart-buttons">
+        <input type="number" value="${pizza.quantity}" min="1" class="quantity-input">
+        <button class="remove-btn">Supprimer</button>
+      </div>
+      <div class="instructions">
+        <label for="instructions-${pizza.name}-${pizza.size}">Instructions :</label>
+        <input type="text" id="instructions-${pizza.name}-${pizza.size}" class="instructions-input" value="${pizza.instructions}">
+      </div>
+    `;
 
     const quantityInput = listItem.querySelector(".quantity-input");
     const removeButton = listItem.querySelector(".remove-btn");
@@ -101,23 +105,85 @@ async function displayCart(cart) {
   totalPriceElement.textContent = totalPrice.toFixed(2) + "€";
 }
 
-// Fonction pour mettre à jour la quantité d'un article dans le panier
-async function updateCartItemQuantity(id, quantity) {
+// Fonction pour mettre à jour la quantité d'une pizza dans le panier
+function updateQuantity(name, size, quantity) {
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+  const pizza = cart.find((item) => item.name === name && item.size === size);
+  if (pizza) {
+    pizza.quantity = parseInt(quantity);
+  }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+  displayCart();
+}
+
+// Fonction pour mettre à jour les instructions d'une pizza dans le panier
+function updateInstructions(name, size, instructions) {
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+  const pizza = cart.find((item) => item.name === name && item.size === size);
+  if (pizza) {
+    pizza.instructions = instructions;
+  }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+}
+
+// Fonction pour supprimer une pizza du panier
+function removeFromCart(name, size) {
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+  cart = cart.filter((pizza) => !(pizza.name === name && pizza.size === size));
+  localStorage.setItem("cart", JSON.stringify(cart));
+  displayCart();
+}
+
+// Fonction pour créer une session de paiement
+async function createCheckoutSession() {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  if (cart.length === 0) {
+    alert("Votre panier est vide.");
+    return;
+  }
+
+  // Collecter les instructions spéciales pour chaque pizza
+  const cartWithInstructions = cart.map((pizza) => ({
+    name: pizza.name,
+    imageUrl: pizza.imageUrl,
+    price: pizza.price,
+    size: pizza.size,
+    quantity: pizza.quantity,
+    instructions: pizza.instructions,
+  }));
+
   try {
-    const response = await fetch(`http://localhost:3000/cart/update`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ pizza: { _id: id }, quantity }),
-    });
+    // Envoyer la requête pour créer une session de paiement avec Stripe
+    const response = await fetch(
+      "http://localhost:3000/create-checkout-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ cart: cartWithInstructions }),
+      }
+    );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const session = await response.json();
+    const stripe = Stripe(
+      "pk_test_51PQ8QrCTtgA7o8OEzNMBH2feWM6FxgnCYmPVfude8E8eyiGS1EbCLp74iH0ODwUW2AeMhxB4GyyO23RbxQiwpNM300om8sfV99"
+    );
 
-    const cart = await response.json();
-    displayCart(cart);
+    // Attendre la redirection vers la page de paiement
+    await stripe.redirectToCheckout({ sessionId: session.id });
+
+    // Une fois le paiement validé et le retour sur la page de succès,
+    // envoyer les détails de la commande au backend pour enregistrement
+    const orderData = {
+      pizzas: cartWithInstructions,
+      totalPrice: calculateTotalPrice(cartWithInstructions),
+    };
+    await postOrder(orderData);
   } catch (error) {
     console.error(
       "Erreur lors de la création de la session de paiement :",
@@ -129,18 +195,27 @@ async function updateCartItemQuantity(id, quantity) {
 // Fonction pour envoyer la commande après le paiement
 async function postOrder(orderData) {
   try {
-    const response = await fetch("http://localhost:3000/cart/remove", {
-      method: "DELETE", // Change POST to DELETE
+    const response = await fetch("http://localhost:3000/orders", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(orderData),
     });
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(
+        "Erreur lors de l'enregistrement de la commande : " +
+          response.statusText
+      );
     }
-    const cart = await response.json();
-    displayCart(cart);
+
+    const savedOrder = await response.json();
+    console.log("Commande enregistrée :", savedOrder);
+
+    // Vider le panier dans le localStorage après avoir enregistré la commande
+    clearLocalStorage();
+    displaySummary(orderData.pizzas); // Afficher le récapitulatif sur summary.html ou autre
   } catch (error) {
     console.error("Erreur lors de l'enregistrement de la commande :", error);
   }
