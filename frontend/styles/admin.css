@@ -1,0 +1,33 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+#order-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+#order-list li {
+  background: #fff;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.pizza-image {
+  max-width: 100px;
+  margin-right: 10px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+}
