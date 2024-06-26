@@ -20,6 +20,7 @@ async function displayPizzas() {
     listItem.innerHTML = `
       <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
       <span>${pizza.name}</span>
+     
       <label for="size-${pizza._id}">Taille :</label>
       <select id="size-${pizza._id}" class="size-select">
         <option value="small" data-price="${pizza.price.small}">Petite - ${pizza.price.small}€</option>
