@@ -1,18 +1,21 @@
-require("dotenv").config(); // Charger les variables d'environnement
-
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const session = require("express-session");
 const cors = require("cors");
-const Pizza = require("./models/pizza");
-
+const bodyParser = require("body-parser");
+const orderRoutes = require("./routes/orderRoutes");
+const pizzaRoutes = require("./routes/pizzas");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
+const PORT = 3000;
 
-// Middleware pour parser le JSON
-app.use(express.json());
+// Middleware
 app.use(cors());
+app.use(bodyParser.json());
+app.use("/pizzas", pizzaRoutes);
+app.use("/orders", orderRoutes);
 
-// Configuration de mongoose pour se connecter à la base de données MongoDB
+// Connexion à la base de données MongoDB
 mongoose
   .connect("mongodb://127.0.0.1:27017/LaTriadePizzeria")
   .then(() => {
@@ -114,6 +117,6 @@ app.delete("/cart/remove", (req, res) => {
 });
 
 // Démarrage du serveur
-app.listen(3000, () => {
-  console.log("Serveur en cours d'exécution sur http://localhost:3000");
+app.listen(PORT, () => {
+  console.log(`Serveur en cours d'exécution sur http://localhost:${PORT}`);
 });

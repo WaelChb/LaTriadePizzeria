@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Success</title>
+  </head>
+  <body>
+    <h1>Payment Successful!</h1>
+    <div id="summary-container"></div>
+    <script>
+      // Fonction pour récupérer les détails de la commande à partir du localStorage
+      function getOrderData() {
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        const totalPrice = cart.reduce(
+          (total, pizza) => total + pizza.price * pizza.quantity,
+          0
+        );
+        return {
+          pizzas: cart,
+          totalPrice: totalPrice.toFixed(2),
+        };
+      }
+
+      // Fonction pour envoyer la commande après le paiement
+      async function postOrder(orderData) {
+        console.log("Tentative d'envoi de la commande:", orderData); // Debug
+        try {
+          const response = await fetch("http://localhost:3000/orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(orderData),
+          });
+
+          if (!response.ok) {
+            throw new Error(
+              "Erreur lors de l'enregistrement de la commande: " +
+                response.statusText
+            );
+          }
+
+          const savedOrder = await response.json();
+          console.log("Commande enregistrée:", savedOrder);
+
+          // Vider le panier dans le localStorage après avoir enregistré la commande
+          clearLocalStorage();
+          displaySummary(orderData.pizzas); // Afficher le récapitulatif
+        } catch (error) {
+          console.error(
+            "Erreur lors de l'enregistrement de la commande:",
+            error
+          );
+        }
+      }
+
+      // Fonction pour vider le localStorage (nettoyer le panier)
+      function clearLocalStorage() {
+        localStorage.removeItem("cart");
+      }
+
+      // Fonction pour afficher le récapitulatif après paiement
+      function displaySummary(cart) {
+        const summaryContainer = document.getElementById("summary-container");
+        summaryContainer.innerHTML = ""; // Effacer le contenu précédent
+
+        const summaryTitle = document.createElement("h2");
+        summaryTitle.textContent = "Récapitulatif de commande";
+
+        const summaryList = document.createElement("ul");
+
+        cart.forEach((pizza) => {
+          const listItem = document.createElement("li");
+          listItem.innerHTML = `
+          <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
+          <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
+          <p>Instructions spéciales : ${pizza.instructions}</p>
+        `;
+          summaryList.appendChild(listItem);
+        });
+
+        summaryContainer.appendChild(summaryTitle);
+        summaryContainer.appendChild(summaryList);
+      }
+
+      // Exécutez la fonction pour envoyer la commande
+      const orderData = getOrderData();
+      postOrder(orderData);
+    </script>
+  </body>
+</html>

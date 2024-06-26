@@ -26,3 +26,28 @@ li {
   padding: 10px;
   border-radius: 4px;
 }
+.pizza-image,
+.cart-pizza-image {
+  width: 100px;
+  height: auto;
+  margin-right: 10px;
+}
+button {
+  padding: 10px 20px;
+  margin: 5px;
+}
+.cart-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-input {
+  width: 50px;
+  margin-right: 10px;
+}
+.pizza-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}

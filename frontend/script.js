@@ -8,7 +8,7 @@ async function fetchPizzas() {
     const pizzas = await response.json();
     return pizzas;
   } catch (error) {
-    console.error("Erreur lors de la récupération des pizzas:", error);
+    console.error("Erreur lors de la récupération des pizzas :", error);
   }
 }
 
@@ -20,11 +20,21 @@ async function displayPizzas() {
 
   pizzas.forEach((pizza) => {
     const listItem = document.createElement("li");
-    listItem.innerHTML = `<img src="${pizza.imageUrl}" alt="${pizza.name}" style="width: 50px; height: 50px;"> ${pizza.name} - ${pizza.description} - ${pizza.price}€`;
-    const addButton = document.createElement("button");
-    addButton.textContent = "Ajouter au panier";
+    listItem.innerHTML = `
+      <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
+      <span>${pizza.name}</span>
+      <label for="size-${pizza._id}">Taille :</label>
+      <select id="size-${pizza._id}" class="size-select">
+        <option value="small" data-price="${pizza.price.small}">Petite - ${pizza.price.small}€</option>
+        <option value="medium" data-price="${pizza.price.medium}">Moyenne - ${pizza.price.medium}€</option>
+        <option value="large" data-price="${pizza.price.large}">Grande - ${pizza.price.large}€</option>
+      </select>
+      <button class="add-to-cart-btn">Ajouter au panier</button>
+    `;
+
+    const addButton = listItem.querySelector(".add-to-cart-btn");
     addButton.addEventListener("click", () => addToCart(pizza));
-    listItem.appendChild(addButton);
+
     pizzaList.appendChild(listItem);
   });
 }
@@ -60,25 +70,35 @@ async function displayCart(cart) {
   }
 
   const cartList = document.getElementById("cart");
-  cartList.innerHTML = ""; // Effacer le panier précédent
-
+  const totalPriceElement = document.getElementById("total-price");
   let totalPrice = 0;
 
-  cart.forEach((item) => {
-    totalPrice += item.price * item.quantity;
-
+  cartList.innerHTML = "";
+  cart.forEach((pizza) => {
     const listItem = document.createElement("li");
     listItem.innerHTML = `${item.name} - ${item.price}€ x <input type="number" value="${item.quantity}" min="1" onchange="updateCartItemQuantity('${item._id}', this.value)">`;
 
-    const removeButton = document.createElement("button");
-    removeButton.textContent = "Supprimer";
-    removeButton.addEventListener("click", () => removeFromCart(item));
-    listItem.appendChild(removeButton);
+    const quantityInput = listItem.querySelector(".quantity-input");
+    const removeButton = listItem.querySelector(".remove-btn");
+    const instructionsInput = listItem.querySelector(".instructions-input");
+
+    quantityInput.addEventListener("change", (e) => {
+      updateQuantity(pizza.name, pizza.size, e.target.value);
+    });
+
+    removeButton.addEventListener("click", () => {
+      removeFromCart(pizza.name, pizza.size);
+    });
+
+    instructionsInput.addEventListener("input", (e) => {
+      updateInstructions(pizza.name, pizza.size, e.target.value);
+    });
 
     cartList.appendChild(listItem);
+    totalPrice += pizza.price * pizza.quantity;
   });
 
-  document.getElementById("total-price").textContent = totalPrice.toFixed(2);
+  totalPriceElement.textContent = totalPrice.toFixed(2) + "€";
 }
 
 // Fonction pour mettre à jour la quantité d'un article dans le panier
@@ -99,19 +119,22 @@ async function updateCartItemQuantity(id, quantity) {
     const cart = await response.json();
     displayCart(cart);
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la quantité:", error);
+    console.error(
+      "Erreur lors de la création de la session de paiement :",
+      error
+    );
   }
 }
 
-// Fonction pour supprimer une pizza du panier
-async function removeFromCart(pizza) {
+// Fonction pour envoyer la commande après le paiement
+async function postOrder(orderData) {
   try {
     const response = await fetch("http://localhost:3000/cart/remove", {
       method: "DELETE", // Change POST to DELETE
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ pizza }),
+      body: JSON.stringify(orderData),
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -119,10 +142,45 @@ async function removeFromCart(pizza) {
     const cart = await response.json();
     displayCart(cart);
   } catch (error) {
-    console.error("Erreur lors de la suppression du panier:", error);
+    console.error("Erreur lors de l'enregistrement de la commande :", error);
   }
 }
 
+// Fonction pour vider le localStorage (nettoyer le panier)
+function clearLocalStorage() {
+  localStorage.removeItem("cart");
+}
+
+// Fonction pour afficher le récapitulatif après paiement
+function displaySummary(cart) {
+  const summaryContainer = document.getElementById("summary-container");
+  summaryContainer.innerHTML = ""; // Effacer le contenu précédent
+
+  const summaryTitle = document.createElement("h2");
+  summaryTitle.textContent = "Récapitulatif de commande";
+
+  const summaryList = document.createElement("ul");
+
+  cart.forEach((pizza) => {
+    const listItem = document.createElement("li");
+    listItem.innerHTML = `
+      <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
+      <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
+      <p>Instructions spéciales : ${pizza.instructions}</p>
+    `;
+    summaryList.appendChild(listItem);
+  });
+
+  summaryContainer.appendChild(summaryTitle);
+  summaryContainer.appendChild(summaryList);
+}
+
+// Ajouter un écouteur d'événements au bouton de passage à la caisse
+document
+  .getElementById("checkout-btn")
+  .addEventListener("click", createCheckoutSession);
+
 // Appel de la fonction pour afficher les pizzas au chargement de la page
 displayPizzas();
+// Appel de la fonction pour afficher le panier au chargement de la page
 displayCart();
