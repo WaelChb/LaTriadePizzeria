@@ -1,6 +1,6 @@
 async function fetchPendingOrders() {
   try {
-    const response = await fetch("http://localhost:3000/admin/orders/pending");
+    const response = await fetch("http://localhost:3000/orders/livraison");
     const orders = await response.json();
     return orders;
   } catch (error) {
@@ -23,7 +23,7 @@ function displayOrders(orders) {
         <div class="pizza-item">
           <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
           <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
-          <p>- Instructions: ${pizza.instructions}</p>
+          <p>Instructions: ${pizza.instructions}</p>
         </div>
       `
         )
@@ -35,13 +35,12 @@ function displayOrders(orders) {
           ${orderDetails}
           <p>Total: ${order.totalPrice}€</p>
           <p>Status: ${order.status}</p>
-          <button class="deliver-btn" data-id="${order._id}">Marquer comme à livrer</button>
+          <button class="deliver-btn" data-id="${order._id}">Marquer comme livré</button>
         </div>
       `;
 
       orderList.appendChild(listItem);
     });
-
     // Ajouter un écouteur d'événements pour chaque bouton "Marquer comme à livrer"
     document.querySelectorAll(".deliver-btn").forEach((button) => {
       button.addEventListener("click", async (event) => {
@@ -57,16 +56,13 @@ function displayOrders(orders) {
 
 async function markAsDeliver(orderId) {
   try {
-    const response = await fetch(
-      `http://localhost:3000/admin/orders/${orderId}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: "à livrer" }),
-      }
-    );
+    const response = await fetch(`http://localhost:3000/orders/${orderId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: "livré" }),
+    });
 
     if (!response.ok) {
       throw new Error(
@@ -87,25 +83,6 @@ async function updateOrders() {
     displayOrders(orders);
   }
 }
-async function checkAuth() {
-  try {
-    const response = await fetch("http://localhost:3000/admin/check-auth", {
-      credentials: "include", // Inclure les cookies
-    });
-    const result = await response.json();
-    if (!result.isAdmin) {
-      window.location.href = "http://127.0.0.1:5500/frontend/login.html";
-    }
-  } catch (error) {
-    console.error(
-      "Erreur lors de la vérification de l'authentification:",
-      error
-    );
-    window.location.href = "http://127.0.0.1:5500/frontend/login.html";
-  }
-}
-
-checkAuth();
 
 // Mettre à jour les commandes toutes les 15 secondes
 setInterval(updateOrders, 15000);
