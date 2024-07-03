@@ -21,6 +21,7 @@ document
       }
 
       const result = await response.json();
+      localStorage.setItem("token", result.token); // Stockez le token JWT dans le localStorage
       console.log(result.message);
       // Redirigez vers admin.html si l'authentification est réussie
       window.location.href = "http://127.0.0.1:5500/frontend/admin.html";

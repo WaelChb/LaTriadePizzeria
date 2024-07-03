@@ -1,10 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const cors = require("cors");
 const bodyParser = require("body-parser");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
+const cors = require("cors");
 const orderRoutes = require("./routes/orderRoutes");
 const pizzaRoutes = require("./routes/pizzas");
 const adminRoutes = require("./routes/adminRoutes");
@@ -12,33 +10,17 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const PORT = 3000;
 
-// Middleware CORS
+// Middleware CORS pour autoriser les requêtes cross-origin
 app.use(
   cors({
-    origin: "http://127.0.0.1:5500", // Origine de votre frontend
-    methods: ["GET", "POST", "PATCH", "DELETE"],
-    credentials: true, // Permettre l'envoi des cookies avec les requêtes CORS
+    origin: "http://127.0.0.1:5500", // Remplacez par l'origine de votre frontend
+    credentials: true, // Permettre l'envoi des cookies
   })
 );
 
-// Autres middlewares
+// Middleware pour parser les corps de requêtes en JSON
 app.use(bodyParser.json());
-app.use(
-  session({
-    secret: "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0U1v2W3x4Y5z6",
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: "mongodb://127.0.0.1:27017/LaTriadePizzeria",
-      touchAfter: 24 * 3600, // rafraîchir uniquement une fois par jour
-    }),
-    cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 1 jour
-      httpOnly: true,
-      secure: false, // mettez sur 'true' si vous utilisez HTTPS
-    },
-  })
-);
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use("/pizzas", pizzaRoutes);
 app.use("/orders", orderRoutes);

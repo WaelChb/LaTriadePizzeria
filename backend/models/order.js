@@ -8,7 +8,7 @@ const orderSchema = new mongoose.Schema({
       price: { type: Number, required: true },
       size: { type: String, required: true },
       quantity: { type: Number, required: true },
-      instructions: { type: String, default: "" },
+      instructions: { type: String, default: "aucune" },
     },
   ],
   totalPrice: { type: Number, required: true },

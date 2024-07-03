@@ -14,7 +14,7 @@ mongoose
 async function createAdmin() {
   const admin = new Admin({
     username: "admin",
-    password: "admin", // Note: Hash the password in a real application for security reasons
+    password: "admin",
   });
 
   try {

@@ -1,6 +1,17 @@
 async function fetchPendingOrders() {
   try {
-    const response = await fetch("http://localhost:3000/admin/orders/pending");
+    const token = localStorage.getItem("token"); // Récupérez le token JWT depuis le localStorage
+    const response = await fetch("http://localhost:3000/admin/orders/pending", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error(
+        "Erreur lors de la récupération des commandes : " + response.statusText
+      );
+    }
     const orders = await response.json();
     return orders;
   } catch (error) {
@@ -57,12 +68,14 @@ function displayOrders(orders) {
 
 async function markAsDeliver(orderId) {
   try {
+    const token = localStorage.getItem("token"); // Récupérez le token JWT depuis le localStorage
     const response = await fetch(
       `http://localhost:3000/admin/orders/${orderId}`,
       {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: "à livrer" }),
       }
@@ -87,9 +100,14 @@ async function updateOrders() {
     displayOrders(orders);
   }
 }
+
 async function checkAuth() {
   try {
+    const token = localStorage.getItem("token"); // Récupérez le token JWT depuis le localStorage
     const response = await fetch("http://localhost:3000/admin/check-auth", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       credentials: "include", // Inclure les cookies
     });
     const result = await response.json();
@@ -104,6 +122,24 @@ async function checkAuth() {
     window.location.href = "http://127.0.0.1:5500/frontend/login.html";
   }
 }
+
+async function logout() {
+  try {
+    const response = await fetch("http://localhost:3000/admin/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors de la déconnexion: " + response.statusText);
+    }
+    localStorage.removeItem("token"); // Supprimer le token du stockage local
+    window.location.href = "http://127.0.0.1:5500/frontend/login.html";
+  } catch (error) {
+    console.error("Erreur lors de la déconnexion:", error);
+  }
+}
+
+document.getElementById("logout-btn").addEventListener("click", logout);
 
 checkAuth();
 
