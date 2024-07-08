@@ -1,7 +1,7 @@
 const Order = require("../models/order");
 
 // Contrôleur pour ajouter une nouvelle commande
-exports.addOrder = async (req, res) => {
+const addOrder = async (req, res) => {
   try {
     const { pizzas, totalPrice } = req.body;
 
@@ -25,4 +25,45 @@ exports.addOrder = async (req, res) => {
     console.error("Error adding order:", error);
     res.status(500).json({ error: "Failed to add order" });
   }
+};
+
+const getPendingOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: "en cours" });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getLivraisonOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: "à livrer" });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const updateOrderStatus = async (req, res) => {
+  try {
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true }
+    );
+    if (!order) {
+      return res.status(404).json({ message: "Commande non trouvée" });
+    }
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  addOrder,
+  getPendingOrders,
+  getLivraisonOrders,
+  updateOrderStatus,
 };

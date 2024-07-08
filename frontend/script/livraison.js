@@ -22,8 +22,7 @@ function displayOrders(orders) {
           (pizza) => `
         <div class="pizza-item">
           <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
-          <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
-          <p>Instructions: ${pizza.instructions}</p>
+          <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity} </span>
         </div>
       `
         )
@@ -83,6 +82,47 @@ async function updateOrders() {
     displayOrders(orders);
   }
 }
+
+async function checkAuth() {
+  try {
+    const response = await fetch("http://localhost:3000/admin/check-auth", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      credentials: "include", // Inclure les cookies
+    });
+    const result = await response.json();
+    if (!result.isAdmin) {
+      window.location.href = "http://127.0.0.1:5500/frontend/login.html";
+    }
+  } catch (error) {
+    console.error(
+      "Erreur lors de la vérification de l'authentification:",
+      error
+    );
+    window.location.href = "http://127.0.0.1:5500/frontend/login.html";
+  }
+}
+
+async function logout() {
+  try {
+    const response = await fetch("http://localhost:3000/admin/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Erreur lors de la déconnexion: " + response.statusText);
+    }
+    localStorage.removeItem("token"); // Supprimer le token du stockage local
+    window.location.href = "http://127.0.0.1:5500/frontend/login.html";
+  } catch (error) {
+    console.error("Erreur lors de la déconnexion:", error);
+  }
+}
+
+document.getElementById("logout-btn").addEventListener("click", logout);
+
+checkAuth();
 
 // Mettre à jour les commandes toutes les 15 secondes
 setInterval(updateOrders, 15000);
