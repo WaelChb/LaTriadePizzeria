@@ -3,10 +3,15 @@ const Order = require("../models/order");
 // Contrôleur pour ajouter une nouvelle commande
 const addOrder = async (req, res) => {
   try {
-    const { pizzas, totalPrice } = req.body;
+    const { pizzas, totalPrice, customer } = req.body;
 
     // Validation des données
-    if (!Array.isArray(pizzas) || pizzas.length === 0 || !totalPrice) {
+    if (
+      !Array.isArray(pizzas) ||
+      pizzas.length === 0 ||
+      !totalPrice ||
+      !customer
+    ) {
       return res.status(400).json({ error: "Invalid request body" });
     }
 
@@ -14,6 +19,7 @@ const addOrder = async (req, res) => {
     const newOrder = new Order({
       pizzas,
       totalPrice,
+      customer,
     });
 
     // Sauvegarder la commande dans la base de données

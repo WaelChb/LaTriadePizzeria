@@ -14,7 +14,33 @@
       <h2>Panier</h2>
       <ul id="cart"></ul>
       <p>Total: <span id="total-price">0</span></p>
-      <button id="checkout-btn">Passer à la caisse</button>
+      <form id="customer-form">
+        <label for="first-name">Prénom :</label>
+        <input type="text" id="first-name" required /><br />
+
+        <label for="last-name">Nom :</label>
+        <input type="text" id="last-name" required /><br />
+
+        <label for="address">Adresse :</label>
+        <input type="text" id="address" required /><br />
+
+        <label for="postal-code">Code Postal :</label>
+        <input type="text" id="postal-code" required /><br />
+
+        <label for="email">Email :</label>
+        <input type="email" id="email" required /><br />
+
+        <label for="phone">Téléphone :</label>
+        <input type="tel" id="phone" required /><br />
+
+        <label for="additional-info">Informations Supplémentaires :</label>
+        <textarea id="additional-info"></textarea><br />
+
+        <button type="button" id="checkout-btn">Passer à la caisse</button>
+      </form>
+      <div id="error-message" style="color: red; display: none">
+        Veuillez remplir tous les champs obligatoires.
+      </div>
     </div>
 
     <script src="./script/script.js"></script>

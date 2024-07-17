@@ -22,7 +22,7 @@ function displayOrders(orders) {
           (pizza) => `
         <div class="pizza-item">
           <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
-          <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity} </span>
+          <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
         </div>
       `
         )
@@ -34,13 +34,25 @@ function displayOrders(orders) {
           ${orderDetails}
           <p>Total: ${order.totalPrice}€</p>
           <p>Status: ${order.status}</p>
-          <button class="deliver-btn" data-id="${order._id}">Marquer comme livré</button>
+          <h4>Informations du client :</h4>
+          <p>Nom : ${order.customer.firstName} ${order.customer.lastName}</p>
+          <p>Adresse : ${order.customer.address}</p>
+          <p>Code Postal : ${order.customer.postalCode}</p>
+          <p>Email : ${order.customer.email}</p>
+          <p>Téléphone : ${order.customer.phone}</p>
+          <p>Informations supplémentaires : ${
+            order.customer.additionalInfo || "N/A"
+          }</p>
+          <button class="deliver-btn" data-id="${
+            order._id
+          }">Marquer comme livré</button>
         </div>
       `;
 
       orderList.appendChild(listItem);
     });
-    // Ajouter un écouteur d'événements pour chaque bouton "Marquer comme à livrer"
+
+    // Ajouter un écouteur d'événements pour chaque bouton "Marquer comme livré"
     document.querySelectorAll(".deliver-btn").forEach((button) => {
       button.addEventListener("click", async (event) => {
         const orderId = event.target.getAttribute("data-id");

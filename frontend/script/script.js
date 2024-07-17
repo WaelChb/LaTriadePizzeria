@@ -139,6 +139,26 @@ function removeFromCart(name, size) {
   displayCart();
 }
 
+// Fonction pour stocker les informations du client dans le localStorage
+function storeCustomerData() {
+  const getFieldValue = (id) => {
+    const element = document.getElementById(id);
+    return element ? element.value : "";
+  };
+
+  const customer = {
+    firstName: getFieldValue("first-name"),
+    lastName: getFieldValue("last-name"),
+    address: getFieldValue("address"),
+    postalCode: getFieldValue("postal-code"),
+    email: getFieldValue("email"),
+    phone: getFieldValue("phone"),
+    additionalInfo: getFieldValue("additional-info"),
+  };
+
+  localStorage.setItem("customer", JSON.stringify(customer));
+}
+
 // Fonction pour créer une session de paiement
 async function createCheckoutSession() {
   const cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -177,14 +197,6 @@ async function createCheckoutSession() {
 
     // Attendre la redirection vers la page de paiement
     await stripe.redirectToCheckout({ sessionId: session.id });
-
-    // Une fois le paiement validé et le retour sur la page de succès,
-    // envoyer les détails de la commande au backend pour enregistrement
-    const orderData = {
-      pizzas: cartWithInstructions,
-      totalPrice: calculateTotalPrice(cartWithInstructions),
-    };
-    await postOrder(orderData);
   } catch (error) {
     console.error(
       "Erreur lors de la création de la session de paiement :",
@@ -193,68 +205,11 @@ async function createCheckoutSession() {
   }
 }
 
-// Fonction pour envoyer la commande après le paiement
-async function postOrder(orderData) {
-  try {
-    const response = await fetch("http://localhost:3000/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(orderData),
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        "Erreur lors de l'enregistrement de la commande : " +
-          response.statusText
-      );
-    }
-
-    const savedOrder = await response.json();
-    console.log("Commande enregistrée :", savedOrder);
-
-    // Vider le panier dans le localStorage après avoir enregistré la commande
-    clearLocalStorage();
-    displaySummary(orderData.pizzas); // Afficher le récapitulatif sur summary.html ou autre
-  } catch (error) {
-    console.error("Erreur lors de l'enregistrement de la commande :", error);
-  }
-}
-
-// Fonction pour vider le localStorage (nettoyer le panier)
-function clearLocalStorage() {
-  localStorage.removeItem("cart");
-}
-
-// Fonction pour afficher le récapitulatif après paiement
-function displaySummary(cart) {
-  const summaryContainer = document.getElementById("summary-container");
-  summaryContainer.innerHTML = ""; // Effacer le contenu précédent
-
-  const summaryTitle = document.createElement("h2");
-  summaryTitle.textContent = "Récapitulatif de commande";
-
-  const summaryList = document.createElement("ul");
-
-  cart.forEach((pizza) => {
-    const listItem = document.createElement("li");
-    listItem.innerHTML = `
-      <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
-      <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
-      <p>Instructions spéciales : ${pizza.instructions}</p>
-    `;
-    summaryList.appendChild(listItem);
-  });
-
-  summaryContainer.appendChild(summaryTitle);
-  summaryContainer.appendChild(summaryList);
-}
-
 // Ajouter un écouteur d'événements au bouton de passage à la caisse
-document
-  .getElementById("checkout-btn")
-  .addEventListener("click", createCheckoutSession);
+document.getElementById("checkout-btn").addEventListener("click", () => {
+  storeCustomerData();
+  createCheckoutSession();
+});
 
 // Appel de la fonction pour afficher les pizzas au chargement de la page
 displayPizzas();

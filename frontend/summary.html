@@ -12,7 +12,8 @@
     <div id="summary-container"></div>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        const canvas = document.querySelector("#confetti-canvas");
+        const canvas = document.createElement("canvas");
+        document.body.appendChild(canvas);
         function onButtonClick() {
           var myConfetti = confetti.create(canvas, {
             resize: true,
@@ -26,6 +27,18 @@
 
         // Appeler la fonction directement pour déclencher l'effet de confetti
         onButtonClick();
+
+        // Récupérer les informations de la commande
+        const orderData = getOrderData();
+        const customerData = getCustomerData();
+        const completeOrderData = { ...orderData, customer: customerData };
+
+        // Envoyer les informations de la commande au serveur
+        postOrder(completeOrderData);
+
+        // Afficher les informations client et récapitulatif
+        displayCustomerInfo(customerData);
+        displaySummary(orderData.pizzas);
       });
 
       // Fonction pour récupérer les détails de la commande à partir du localStorage
@@ -39,6 +52,12 @@
           pizzas: cart,
           totalPrice: totalPrice.toFixed(2),
         };
+      }
+
+      // Fonction pour récupérer les informations du client à partir du localStorage
+      function getCustomerData() {
+        const customer = JSON.parse(localStorage.getItem("customer")) || {};
+        return customer;
       }
 
       // Fonction pour envoyer la commande après le paiement
@@ -65,7 +84,6 @@
 
           // Vider le panier dans le localStorage après avoir enregistré la commande
           clearLocalStorage();
-          displaySummary(orderData.pizzas); // Afficher le récapitulatif
         } catch (error) {
           console.error(
             "Erreur lors de l'enregistrement de la commande:",
@@ -77,6 +95,7 @@
       // Fonction pour vider le localStorage (nettoyer le panier)
       function clearLocalStorage() {
         localStorage.removeItem("cart");
+        localStorage.removeItem("customer");
       }
 
       // Fonction pour afficher le récapitulatif après paiement
@@ -92,10 +111,10 @@
         cart.forEach((pizza) => {
           const listItem = document.createElement("li");
           listItem.innerHTML = `
-          <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
-          <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
-          <p>Instructions spéciales : ${pizza.instructions}</p>
-        `;
+            <img src="${pizza.imageUrl}" alt="${pizza.name}" class="pizza-image">
+            <span>${pizza.name} - ${pizza.size} - ${pizza.price}€ - Quantité: ${pizza.quantity}</span>
+            <p>Instructions spéciales : ${pizza.instructions}</p>
+          `;
           summaryList.appendChild(listItem);
         });
 
@@ -103,9 +122,23 @@
         summaryContainer.appendChild(summaryList);
       }
 
-      // Exécutez la fonction pour envoyer la commande
-      const orderData = getOrderData();
-      postOrder(orderData);
+      // Fonction pour afficher les informations client
+      function displayCustomerInfo(customer) {
+        const summaryContainer = document.getElementById("summary-container");
+
+        const customerInfo = document.createElement("div");
+        customerInfo.innerHTML = `
+          <h3>Informations du Client</h3>
+          <p>Prénom : ${customer.firstName}</p>
+          <p>Nom : ${customer.lastName}</p>
+          <p>Adresse : ${customer.address}</p>
+          <p>Code Postal : ${customer.postalCode}</p>
+          <p>Email : ${customer.email}</p>
+          <p>Téléphone : ${customer.phone}</p>
+          <p>Informations Supplémentaires : ${customer.additionalInfo}</p>
+        `;
+        summaryContainer.appendChild(customerInfo);
+      }
     </script>
   </body>
 </html>

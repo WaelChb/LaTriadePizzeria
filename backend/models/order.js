@@ -12,6 +12,15 @@ const orderSchema = new mongoose.Schema({
     },
   ],
   totalPrice: { type: Number, required: true },
+  customer: {
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    address: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    additionalInfo: { type: String, default: "" },
+  },
   createdAt: { type: Date, default: Date.now },
   status: { type: String, default: "en cours" },
 });
